@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
-	"goyash/golang-kafka-job-scheduler/config"
+	"go-kafka-job-scheduler/config"
 	"gopkg.in/robfig/cron.v2"
 	"net/http"
-	"goyash/golang-kafka-job-scheduler/models/jobs"
-	"goyash/golang-kafka-job-scheduler/kafka"
+	"go-kafka-job-scheduler/models/jobs"
+	"go-kafka-job-scheduler/kafka"
 )
 
 var jobIds = []cron.EntryID{0}
@@ -47,7 +47,7 @@ func AddJobsToCron (c *cron.Cron, config config.Config, jobs []jobs.Jobs) {
 
 func ScheduleJobs(cron *cron.Cron, config config.Config) {
 	//read jobs from jobs table
-	jobs, err  := jobs.ReadJobs(config)
+	jobs,_  := jobs.ReadJobs(config)
 	if len(jobs) > 0 {
 		AddJobsToCron(cron, config, jobs)
 	}

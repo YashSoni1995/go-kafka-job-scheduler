@@ -1,7 +1,7 @@
 package jobs
 
 import (
-	"goyash/golang-kafka-job-scheduler/config"
+	"go-kafka-job-scheduler/config"
 )
 
 type Jobs struct {

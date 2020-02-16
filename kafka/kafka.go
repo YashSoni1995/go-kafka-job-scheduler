@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"goyash/golang-kafka-job-scheduler/config"
+	"go-kafka-job-scheduler/config"
 	"github.com/shopify/sarama"
 	"log"
 )

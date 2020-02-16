@@ -34,6 +34,6 @@ func InitKafkaProducer(env string) sarama.SyncProducer {
 	config = sarama.NewConfig()
 	config.Producer.Return.Successes = true
 	w, err := sarama.NewSyncProducer(brokers, config)
-	log.Println("[KAFKA] Connecting to kafka broker", w, "with error", err)
+	log.Println("[KAFKA] Connecting to kafka broker with error", err)
 	return w
 }
