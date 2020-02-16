@@ -1,4 +1,4 @@
-.PHONY: bootstrap clean all compile tests deps docs prodtest test
+.PHONY: bootstrap clean all compile tests deps test
 debug:
 
-	go run scheduler.go ./config
+	go run scheduler.go ./config ./kafka

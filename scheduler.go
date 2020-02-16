@@ -4,82 +4,73 @@ import (
 	"fmt"
 	"log"
 	"goyash/golang-kafka-job-scheduler/config"
-	//"github.com/jasonlvhit/gocron"
-	"os"
 	"gopkg.in/robfig/cron.v2"
-	"time"
-	//"sync"
 	"net/http"
 	"goyash/golang-kafka-job-scheduler/models/jobs"
+	"goyash/golang-kafka-job-scheduler/kafka"
 )
-
-const ONE_SECOND = 1*time.Second + 10*time.Millisecond
-
-func task() {
-	fmt.Println("I am running task.")
-}
-
-func taskWithParams(a int, b string) {
-	fmt.Println(a, b)
-}
-
-
-
-
 
 var jobIds = []cron.EntryID{0}
 
-func RemovePreviousJobs(c *cron.Cron, jobIds []cron.EntryID) {
-	log.Println("removing previously added jobs...")
+
+func ExecuteJob (config config.Config, job jobs.Jobs) (string, error){
+	return fmt.Sprintf(job.Task), nil
+}
+
+func ExecuteJobAndPushToKafka(config config.Config, job jobs.Jobs) {
+	message, err := ExecuteJob(config, job)
+	topic := job.Topic
+	log.Println("Push message to kafka\n", "topic - ", topic, "| message - ", message, "with error", err)
+	//push message received after executing the job to kafka
+	kafka.PushMessageToKafka(config, topic, message)
+}
+
+func RemoveJobsFromCron(c *cron.Cron, jobIds []cron.EntryID) {
+	log.Println("removing previously added jobs and rescheduling again...")
 	for _,id := range jobIds {
 		c.Remove(id)
 	}
 }
 
 func AddJobsToCron (c *cron.Cron, config config.Config, jobs []jobs.Jobs) {
-	RemovePreviousJobs(c, jobIds)
+	//first removing previously added jobs to avoid duplication and ensure updated jobs run everytime
+	RemoveJobsFromCron(c, jobIds)
 	jobIds = []cron.EntryID{0}
+	//executing each job acc to schedule and pushing data to kafka
 	for _,job := range jobs {
-		jobId,_ := c.AddFunc(job.Schedule, RunJobTask)
+		jobId,_ := c.AddFunc(job.Schedule, func() {
+			ExecuteJobAndPushToKafka(config, job)
+		})
 		jobIds = append(jobIds, jobId)
 	}
 }
 
-func RunJobTask () {
-	log.Println("Hello")
-}
-
 func ScheduleJobs(cron *cron.Cron, config config.Config) {
-	
-	jobs,_  := jobs.ReadJobs(config)
-	
+	//read jobs from jobs table
+	jobs, err  := jobs.ReadJobs(config)
 	if len(jobs) > 0 {
 		AddJobsToCron(cron, config, jobs)
 	}
-	
 	return 
 }
 
 func main() {
 	
 	env := "local"
+	port := "5000"
 	pg := config.InitPG(env)
 	defer pg.Close()
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "5000"
-	}
 
 	config := config.Config{
 		PG:     pg,
 		Port:   port,
 		Env:    env,
-		//Kafka:  bfConfig.InitKafkaProducer(env),
+		Kafka:  config.InitKafkaProducer(env),
 	}
 
 	cron := cron.New()
-	cron.AddFunc("*/30 * * * * *", func() { 
+	//cron job to fetch and schedule jobs from db every 5 mins
+	cron.AddFunc("0 */5 * * * *", func() { 
 			ScheduleJobs(cron, config) 
 		})
 	

@@ -7,13 +7,12 @@ import (
 type Jobs struct {
 	TableName  	struct{} 	`sql:"jobs" json:"-"`
 	Id 		   	string 		`sql:"id"` 
-	Query 		string 		`sql:"query"`
+	Task 		string 		`sql:"task"`
+	Topic 		string 		`sql:"topic"`	
 	Schedule 	string 		`sql:"schedule"`
 }
 
 func ReadJobs(c config.Config) (jobs []Jobs, err error){
-	err = c.PG.Model(&Jobs{}).
-		Limit(1).
-		Select(&jobs)
+	err = c.PG.Model(&Jobs{}).Select(&jobs)
 	return
 }
